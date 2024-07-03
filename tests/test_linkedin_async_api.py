@@ -1,9 +1,10 @@
 import pytest
+import pytest_asyncio
 import httpx
 import respx
 
-from linkedin_api import LinkedIn
-from linkedin_api.client import LinkedInClient
+from linkedin_api.async_linkedin import AsyncLinkedIn
+from linkedin_api.client import AsyncLinkedInClient
 from linkedin_api.utils.query_options import SortBy, LocationType, GeoID
 
 
@@ -13,33 +14,33 @@ TEST_CONVERSATION_ID = "TEST_CONVERSATION_ID"
 TEST_COMMENT_ID = "TEST_COMMENT_ID"
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @respx.mock
-def init_linkedin():
-    client = httpx.Client()
-    linkedin_client = LinkedInClient(session=client)
-    linkedin = LinkedIn(linkedin_client)
+async def init_linkedin(respx_mock):
+    client = httpx.AsyncClient()
+    linkedin_client = AsyncLinkedInClient(session=client)
+    linkedin = AsyncLinkedIn(linkedin_client)
     payload = {
         "session_key": "foo",
         "session_password": "bar",
         "JSESSIONID": "hello world",
     }
-    respx.get(f"{linkedin_client.LINKEDIN_BASE_URL}/uas/authenticate").respond(
+    respx_mock.get(f"{linkedin_client.LINKEDIN_BASE_URL}/uas/authenticate").respond(
         status_code=200, cookies={"JSESSIONID": "hello world"}
     )
-    respx.post(
+    respx_mock.post(
         f"{linkedin_client.LINKEDIN_BASE_URL}/uas/authenticate",
         data=payload,
         headers=linkedin_client.AUTH_REQUEST_HEADERS,
         cookies=linkedin_client._session.cookies,
     ).mock(return_value=httpx.Response(status_code=200, json={"login_result": "PASS"}))
-    respx.get(f"{linkedin_client.LINKEDIN_BASE_URL}")
-    linkedin.authenticate("foo", "bar")
+    respx_mock.get(f"{linkedin_client.LINKEDIN_BASE_URL}")
+    await linkedin.authenticate("foo", "bar")
     return linkedin
 
-
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile(init_linkedin):
+async def test_get_profile(init_linkedin):
     mock_json_response = {
         "profile": {
             "industryName": "Test Data",
@@ -91,13 +92,14 @@ def test_get_profile(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PROFILE_ID}/profileView"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    profile = init_linkedin.get_profile(urn_id=TEST_PROFILE_ID)
+    profile = await init_linkedin.get_profile(urn_id=TEST_PROFILE_ID)
 
     assert profile is not None
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_privacy_settings(init_linkedin):
+async def test_get_profile_privacy_settings(init_linkedin):
     mock_json_response = {
         "data": {
             "messagingTypingIndicators": "ALL_ENABLED",
@@ -116,13 +118,14 @@ def test_get_profile_privacy_settings(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PUBLIC_PROFILE_ID}/privacySettings"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    data = init_linkedin.get_profile_privacy_settings(TEST_PUBLIC_PROFILE_ID)
+    data = await init_linkedin.get_profile_privacy_settings(TEST_PUBLIC_PROFILE_ID)
 
     assert data is not None
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_member_badges(init_linkedin):
+async def test_get_profile_member_badges(init_linkedin):
     mock_json_response = {
         "data": {
             "premium": True,
@@ -136,12 +139,13 @@ def test_get_profile_member_badges(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PUBLIC_PROFILE_ID}/memberBadges"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    data = init_linkedin.get_profile_member_badges(TEST_PUBLIC_PROFILE_ID)
+    data = await init_linkedin.get_profile_member_badges(TEST_PUBLIC_PROFILE_ID)
     assert data is not None
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_network_info(init_linkedin):
+async def test_get_profile_network_info(init_linkedin):
     mock_json_response = {
         "data": {
             "distance": {"value": "DISTANCE_3"},
@@ -157,12 +161,13 @@ def test_get_profile_network_info(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PUBLIC_PROFILE_ID}/networkinfo"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    data = init_linkedin.get_profile_network_info(TEST_PUBLIC_PROFILE_ID)
+    data = await init_linkedin.get_profile_network_info(TEST_PUBLIC_PROFILE_ID)
     assert data is not None
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_contact_info(init_linkedin):
+async def test_get_profile_contact_info(init_linkedin):
     mock_json_response = {
         "emailAddress": "foo@bar.com",
         "twitterHandles": [{"name": "foobydoobydoo", "credentialId": "tyest"}],
@@ -172,12 +177,13 @@ def test_get_profile_contact_info(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PROFILE_ID}/profileContactInfo"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    contact_info = init_linkedin.get_profile_contact_info(TEST_PROFILE_ID)
+    contact_info = await init_linkedin.get_profile_contact_info(TEST_PROFILE_ID)
     assert contact_info
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_posts(init_linkedin):
+async def test_get_profile_posts(init_linkedin):
     mock_json_response = {
         "elements": [
             {
@@ -244,12 +250,13 @@ def test_get_profile_posts(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + "/identity/profileUpdatesV2").mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    posts = init_linkedin.get_profile_posts(TEST_PROFILE_ID)
+    posts = await init_linkedin.get_profile_posts(TEST_PROFILE_ID)
     assert posts
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_post_comments(init_linkedin):
+async def test_get_post_comments(init_linkedin):
     mock_json_response = {
         "paging": {"count": 100, "start": 0, "total": 3, "links": []},
         "elements": [
@@ -321,12 +328,13 @@ def test_get_post_comments(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + "/feed/comments").mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    comments = init_linkedin.get_post_comments(TEST_COMMENT_ID)
+    comments = await init_linkedin.get_post_comments(TEST_COMMENT_ID)
     assert comments
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_organization(init_linkedin):
+async def test_get_organization(init_linkedin):
     mock_json_response = {
         "paging": {
             "count": 10,
@@ -368,13 +376,14 @@ def test_get_organization(init_linkedin):
         init_linkedin.client.API_BASE_URL + "/organization/companies",
         params={"universalName": "harvard-medical-school"},
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    data = init_linkedin.get_organization("harvard-medical-school")
+    data = await init_linkedin.get_organization("harvard-medical-school")
     assert data is not None
     assert data.elements.name == "Harvard Medical School"
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_search_people(init_linkedin):
+async def test_search_people(init_linkedin):
     mock_json_response = {
         "data": {
             "searchDashClustersByAll": {
@@ -514,15 +523,16 @@ def test_search_people(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + url).mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    results = init_linkedin.search_people(
+    results = await init_linkedin.search_people(
         keywords="software",
         include_private_profiles=True,
     )
     assert results
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_search_jobs_v1(init_linkedin):
+async def test_search_jobs_v1(init_linkedin):
     mock_json_response = {
         "paging": {
             "total": 698,
@@ -554,7 +564,7 @@ def test_search_jobs_v1(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + url).mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    jobs = init_linkedin.search_jobs(
+    jobs = await init_linkedin.search_jobs(
         "Software Engineer",
         sort_by=SortBy.DATE,
         location=GeoID.USA,
@@ -564,8 +574,9 @@ def test_search_jobs_v1(init_linkedin):
     assert jobs
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_search_jobs_v2(init_linkedin):
+async def test_search_jobs_v2(init_linkedin):
     mock_json_response = {
         "data": {
             "paging": {
@@ -593,7 +604,7 @@ def test_search_jobs_v2(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + url).mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    jobs = init_linkedin.search_jobs(
+    jobs = await init_linkedin.search_jobs(
         "Software Engineer",
         sort_by=SortBy.DATE,
         location=GeoID.USA,
@@ -604,8 +615,9 @@ def test_search_jobs_v2(init_linkedin):
     assert jobs
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_job(init_linkedin):
+async def test_get_job(init_linkedin):
     job_id = "100"
     mock_json_response = {
         "jobPostingId": 100,
@@ -628,12 +640,13 @@ def test_get_job(init_linkedin):
     respx.get(f"{init_linkedin.client.API_BASE_URL}/jobs/jobPostings/{job_id}").mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    job_info = init_linkedin.get_job(job_id)
+    job_info = await init_linkedin.get_job(job_id)
     assert job_info
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_job_skills(init_linkedin):
+async def test_get_job_skills(init_linkedin):
     job_id = "3962991901"
     mock_json_response = {
         "companyUrn": "asasa",
@@ -648,12 +661,13 @@ def test_get_job_skills(init_linkedin):
     respx.get(
         f"{init_linkedin.client.API_BASE_URL}/voyagerAssessmentsDashJobSkillMatchInsight/urn%3Ali%3Afsd_jobSkillMatchInsight%3A3962991901"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    job_info = init_linkedin.get_job_skills(job_id)
+    job_info = await init_linkedin.get_job_skills(job_id)
     assert job_info
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_search_companies(init_linkedin):
+async def test_search_companies(init_linkedin):
     mock_json_response = {
         "data": {
             "searchDashClustersByAll": {
@@ -771,12 +785,13 @@ def test_search_companies(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + url).mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    results = init_linkedin.search_companies(keywords="google")
+    results = await init_linkedin.search_companies(keywords="google")
     assert results
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_profile_skills(init_linkedin):
+async def test_get_profile_skills(init_linkedin):
     mock_json_response = {
         "paging": {"count": 100, "start": 0, "total": 10},
         "elements": [{"name": "picking my nose"}],
@@ -785,12 +800,13 @@ def test_get_profile_skills(init_linkedin):
         init_linkedin.client.API_BASE_URL
         + f"/identity/profiles/{TEST_PROFILE_ID}/skills"
     ).mock(return_value=httpx.Response(status_code=200, json=mock_json_response))
-    skills = init_linkedin.get_profile_skills(TEST_PROFILE_ID)
+    skills = await init_linkedin.get_profile_skills(TEST_PROFILE_ID)
     assert skills
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_updates(init_linkedin):
+async def test_get_updates(init_linkedin):
     mock_json_response = {
         "elements": [
             {
@@ -862,12 +878,13 @@ def test_get_updates(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + "/feed/updates").mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    posts = init_linkedin.get_company_updates("gogole")
+    posts = await init_linkedin.get_company_updates("gogole")
     assert posts
 
 
+@pytest.mark.asyncio
 @respx.mock
-def test_get_user_profile(init_linkedin):
+async def test_get_user_profile(init_linkedin):
     mock_json_response = {
         "plainId": 10000,
         "publicContactInfo": {},
@@ -882,5 +899,5 @@ def test_get_user_profile(init_linkedin):
     respx.get(init_linkedin.client.API_BASE_URL + "/me").mock(
         return_value=httpx.Response(status_code=200, json=mock_json_response)
     )
-    me = init_linkedin.get_user_profile()
+    me = await init_linkedin.get_user_profile()
     assert me

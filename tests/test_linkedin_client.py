@@ -1,23 +1,27 @@
-import pytest
-import json
-import os
-import sys
-from linkedin_api.client import Client
+import httpx
+import respx
 
-TEST_LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME")
-TEST_LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD")
-
-if not (TEST_LINKEDIN_USERNAME and TEST_LINKEDIN_PASSWORD):
-    print("Test config incomplete. Exiting...")
-    sys.exit()
+from linkedin_api.client import LinkedInClient
 
 
-@pytest.fixture
-def client():
-    return Client()
-
-
-def test_authenticate(client):
-    client.authenticate(TEST_LINKEDIN_USERNAME, TEST_LINKEDIN_USERNAME)
-
-    assert client.session.cookies
+@respx.mock
+def test_authenticate():
+    client = httpx.Client()
+    linkedin_client = LinkedInClient(session=client)
+    payload = {
+        "session_key": "foo",
+        "session_password": "bar",
+        "JSESSIONID": "hello world",
+    }
+    respx.get(f"{linkedin_client.LINKEDIN_BASE_URL}/uas/authenticate").respond(
+        status_code=200, cookies={"JSESSIONID": "hello world"}
+    )
+    respx.post(
+        f"{linkedin_client.LINKEDIN_BASE_URL}/uas/authenticate",
+        data=payload,
+        headers=linkedin_client.AUTH_REQUEST_HEADERS,
+        cookies=linkedin_client._session.cookies,
+    ).mock(return_value=httpx.Response(status_code=200, json={"login_result": "PASS"}))
+    respx.get(f"{linkedin_client.LINKEDIN_BASE_URL}")
+    linkedin_client.authenticate("foo", "bar")
+    client.close()

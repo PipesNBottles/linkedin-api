@@ -1,42 +1,57 @@
+"""
+MIT License
+
+Copyright (c) 2024 Tom Quirk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import os
-import pickle
 import time
-import linkedin_api.settings as settings
-from requests.cookies import RequestsCookieJar
-from typing import Optional
+import linkedin_api.utils.settings as settings
+from http.cookiejar import CookieJar, MozillaCookieJar
+from httpx import Cookies
+from linkedin_api.utils.errors import LinkedinSessionExpired
 
 
-class Error(Exception):
-    """Base class for other exceptions"""
-
-    pass
-
-
-class LinkedinSessionExpired(Error):
-    pass
-
-
-class CookieRepository(object):
+class CookieRepository:
     """
     Class to act as a repository for the cookies.
-
-    TODO: refactor to use http.cookiejar.FileCookieJar
     """
 
-    def __init__(self, cookies_dir=settings.COOKIE_PATH):
+    def __init__(self):
+        self.cookie_jar = MozillaCookieJar()
+
+    def set_cookies_dir(self, cookies_dir=settings.COOKIE_PATH):
         self.cookies_dir = cookies_dir or settings.COOKIE_PATH
 
-    def save(self, cookies, username):
+    def save(self, cookies: Cookies, username: str):
         self._ensure_cookies_dir()
         cookiejar_filepath = self._get_cookies_filepath(username)
-        with open(cookiejar_filepath, "wb") as f:
-            pickle.dump(cookies, f)
+        for cookie in cookies.jar:
+            self.cookie_jar.set_cookie(cookie)
+        self.cookie_jar.save(cookiejar_filepath)
 
-    def get(self, username: str) -> Optional[RequestsCookieJar]:
+    def get(self, username: str) -> Cookies:
         cookies = self._load_cookies_from_cache(username)
-        if cookies and not CookieRepository._is_token_still_valid(cookies):
+        if cookies and not CookieRepository._is_token_still_valid(cookies.jar):
             raise LinkedinSessionExpired
-
         return cookies
 
     def _ensure_cookies_dir(self):
@@ -47,24 +62,25 @@ class CookieRepository(object):
         """
         Return the absolute path of the cookiejar for a given username
         """
-        return "{}{}.jr".format(self.cookies_dir, username)
+        return "{}{}.txt".format(self.cookies_dir, username)
 
-    def _load_cookies_from_cache(self, username: str) -> Optional[RequestsCookieJar]:
+    def _load_cookies_from_cache(self, username: str) -> Cookies:
+        cookie_jar = None
         cookiejar_filepath = self._get_cookies_filepath(username)
-        try:
-            with open(cookiejar_filepath, "rb") as f:
-                cookies = pickle.load(f)
-                return cookies
-        except FileNotFoundError:
-            return None
+        if os.path.exists(cookiejar_filepath):
+            self.cookie_jar.load(cookiejar_filepath)
+            cookie_jar = self.cookie_jar
+        return Cookies(cookie_jar)
 
     @staticmethod
-    def _is_token_still_valid(cookiejar: RequestsCookieJar):
+    def _is_token_still_valid(cookiejar: CookieJar):
         _now = time.time()
         for cookie in cookiejar:
             if cookie.name == "JSESSIONID" and cookie.value:
                 if cookie.expires and cookie.expires > _now:
                     return True
-                break
+            if cookie.name == "li_at" and cookie.value:
+                if cookie.expires and cookie.expires > _now:
+                    return True
 
         return False

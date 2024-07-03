@@ -1,32 +1,5 @@
 # Linkedin API for Python
 
-<h3 align="center">Sponsors</h3>
-
-<p align="center" style="margin-bottom:24px" >
-  <a href="https://prospeo.io/api/linkedin-email-finder" target="_blank">
-    <img height="45px" style="margin-right:24px" src="https://raw.githubusercontent.com/tomquirk/linkedin-api/master/assets/logos/prospeo.png" alt="Prospeo">
-  </a>
-  <a href="https://nubela.co/proxycurl/?utm_campaign=influencer%20marketing&utm_source=github&utm_medium=social&utm_term=-&utm_content=tom%20quirk" target="_blank">
-    <img height="45px" style="margin-right:24px" src="https://raw.githubusercontent.com/tomquirk/linkedin-api/master/assets/logos/proxycurl.png" alt="proxycurl">
-  </a>
-  <a href="https://lix-it.com/pages/linkedin-api?utm_campaign=influencer%20marketing&utm_source=github&utm_medium=social&utm_content=tomquirk" style="margin-right:24px" target="_blank">
-    <img height="45px" src="https://raw.githubusercontent.com/tomquirk/linkedin-api/master/assets/logos/lix.png" alt="Lix">
-  </a>
-    <a href="https://www.unipile.com/communication-api/messaging-api/linkedin-api/?utm_campaign=git%20tom%20quirk" target="_blank">
-    <img  height="70px" src="https://raw.githubusercontent.com/tomquirk/linkedin-api/master/assets/logos/unipile.png" alt="Unipile">
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://iscraper.io/" target="_blank">
-    <img height="35px" src="https://raw.githubusercontent.com/tomquirk/linkedin-api/master/assets/logos/iscraper.png" alt="serpsbot">
-  </a>
-</p>
-
-<h5 align="center"><a href="https://github.com/sponsors/tomquirk/sponsorships?sponsor=tomquirk&tier_id=96653&preview=false" target="_blank">Become a sponsor</a></h5>
-
----
-
 Programmatically search profiles, send messages, and find jobs. All with a regular Linkedin user account.
 
 No "official" API access required - just use a valid Linkedin account!
@@ -35,119 +8,121 @@ No "official" API access required - just use a valid Linkedin account!
 
 ## Installation
 
-> Python >= 3.6 required
-
-To install the linkedin_api package, use the following command:
-
-```bash
-pip install linkedin-api
-```
-
-Or, for bleading edge:
-
-```bash
-pip install git+https://github.com/tomquirk/linkedin-api.git
-```
+> Python >= 3.10 required
 
 ### Quick Start
-
-> See all methods on the [documentation website](https://linkedin-api.readthedocs.io/).
-
-The following snippet demonstrates a few basic linkedin_api use cases:
-
-```python
-from linkedin_api import Linkedin
-
-# Authenticate using any Linkedin account credentials
-api = Linkedin('reedhoffman@linkedin.com', '*******')
-
-# GET a profile
-profile = api.get_profile('billy-g')
-
-# GET a profiles contact info
-contact_info = api.get_profile_contact_info('billy-g')
-
-# GET 1st degree connections of a given profile
-connections = api.get_profile_connections('1234asc12304')
+> Script Client
+```
+linkedin = LinkedInScriptApi(credentials["username"], credentials["password"])
+jobs = linkedin.search_jobs("Software", total_jobs = 10_000)
 ```
 
-## Commercial alternatives
+>Async Version
 
-> This is a sponsored section
+```
+session = AsyncClient()
+client = AsyncLinkedInClient(session=session)
+linkedin = AsyncLinkedIn(client)
+await linkedin.authenticate(credentials["username"], credentials["password"])
+await linkedin.get_profile_privacy_settings("khalid-a-53a190142")
+profile = await linkedin.search_people(current_company=[CompanyID.GOOGLE], past_companies=[CompanyID.APPLE], include_private_profiles=True)
+company = await linkedin.get_company_updates(public_id="google")
+await linkedin.get_organization("google")
+jobs = await linkedin.search_jobs(
+    "Software Engineer",
+    sort_by=SortBy.DATE,
+    location=GeoID.USA,
+    remote=[LocationType.ONSITE],
+    limit=10,
+)
+if jobs:
+    for job in jobs.elements:
+        job_complete = await linkedin.get_job(job.tracking_urn.split(":")[-1])
+        job_skills = await linkedin.get_job_skills(job.tracking_urn.split(":")[-1])
+    print(job_complete)
+await linkedin.search({"keywords": "software"})
+res = await linkedin.search_people(keywords="software",include_private_profiles=True)
+await linkedin._close()
+```
 
-<h3>
-<a href="https://prospeo.io/api/linkedin-email-finder">
-Prospeo
-</a>
-</h3>
+> Sync Version
+```
+session = Client()
+client = LinkedInClient(session=session)
+linkedin = LinkedIn(client)
+linkedin.authenticate(credentials["username"], credentials["password"])
 
-Extract data and find verified emails in real-time with [Prospeo LinkedIn Email Finder API](https://prospeo.io/api/linkedin-email-finder).
+linkedin.get_profile_privacy_settings("khalid-a-53a190142")
+profile = linkedin.search_people(current_company=[CompanyID.GOOGLE], past_companies=[CompanyID.APPLE], include_private_profiles=True)
+company = linkedin.get_company_updates(public_id="google")
+linkedin.get_organization("google")
+jobs = linkedin.search_jobs(
+    "Software Engineer",
+    sort_by=SortBy.DATE,
+    location=GeoID.USA,
+    remote=[LocationType.ONSITE],
+    limit=10,
+)
+if jobs:
+    for job in jobs.elements:
+        job_complete = linkedin.get_job(job.tracking_urn.split(":")[-1])
+        job_skills = linkedin.get_job_skills(job.tracking_urn.split(":")[-1])
+    print(job_complete)
+linkedin.search({"keywords": "software"})
+res = linkedin.search_people(keywords="software",include_private_profiles=True)
+linkedin._close()
+session = Client()
+client = LinkedInClient(session=session)
+linkedin = LinkedIn(client)
+linkedin.authenticate(credentials["username"], credentials["password"])
 
-<details>
-  <summary>Learn more</summary>
-Submit a LinkedIn profile URL to our API and get:
+linkedin.get_profile_privacy_settings("khalid-a-53a190142")
+profile = linkedin.search_people(current_company=[CompanyID.GOOGLE], past_companies=[CompanyID.APPLE], include_private_profiles=True)
+company = linkedin.get_company_updates(public_id="google")
+linkedin.get_organization("google")
+jobs = linkedin.search_jobs(
+    "Software Engineer",
+    sort_by=SortBy.DATE,
+    location=GeoID.USA,
+    remote=[LocationType.ONSITE],
+    limit=10,
+)
+if jobs:
+    for job in jobs.elements:
+        job_complete = linkedin.get_job(job.tracking_urn.split(":")[-1])
+        job_skills = linkedin.get_job_skills(job.tracking_urn.split(":")[-1])
+    print(job_complete)
+linkedin.search({"keywords": "software"})
+res = linkedin.search_people(keywords="software",include_private_profiles=True)
+linkedin._close()        session = Client()
+client = LinkedInClient(session=session)
+linkedin = LinkedIn(client)
+linkedin.authenticate(credentials["username"], credentials["password"])
 
-- Profile data extracted in real-time
-- Company data of the profile
-- Verified work email of the profile
-- Exclusive data points (gender, cleaned country code, time zone...)
-- One do-it-all request
-- Stable API, tested under high load
-
-Try it with 75 profiles. [Get your FREE API key now](https://prospeo.io/api/linkedin-email-finder).
-
-</details>
-
-<h3>
-<a href="https://nubela.co/proxycurl/?utm_campaign=influencer%20marketing&utm_source=github&utm_medium=social&utm_term=-&utm_content=tom%20quirk">
-Proxycurl
-</a>
-</h3>
-
-Scrape public LinkedIn profile data at scale with [Proxycurl APIs](https://nubela.co/proxycurl/?utm_campaign=influencer%20marketing&utm_source=github&utm_medium=social&utm_term=-&utm_content=tom%20quirk).
-
-<details>
-  <summary>Learn more</summary>
-  
-- Scraping Public profiles are battle tested in court in HiQ VS LinkedIn case.
-- GDPR, CCPA, SOC2 compliant
-- High rate limit - 300 requests/minute
-- Fast - APIs respond in ~2s
-- Fresh data - 88% of data is scraped real-time, other 12% are not older than 29 days
-- High accuracy
-- Tons of data points returned per profile
-
-Built for developers, by developers.
-
-</details>
-
-<h3>
-<a href="https://www.unipile.com/communication-api/messaging-api/linkedin-api/?utm_campaign=git%20tom%20quirk">
-Unipile
-</a>
-</h3>
-
-Full [LinkedIn API](https://www.unipile.com/communication-api/messaging-api/linkedin-api/?utm_campaign=git%20tom%20quirk): Connect Classic/Sales Navigator/Recruiter, synchronize real-time messaging, enrich data and build outreach sequences…
-
-<details>
-  <summary>Learn more</summary>
-  
-- Easily connect your users in the cloud with our white-label authentication (captcha solving, in-app validation, OTP, 2FA).
-- Real-time webhook for each message received, read status, invitation accepted, and more.
-- Data extraction: get profile, get company, get post, extract search results from Classic + Sales Navigator + Recruiter
-- Outreach sequences: send invitations, InMail, messages, and comment on posts…
-
-Test [all the features](https://www.unipile.com/communication-api/messaging-api/linkedin-api/?utm_campaign=git%20tom%20quirk) with our 7-day free trial.
-
-</details>
-
-> End sponsored section
+linkedin.get_profile_privacy_settings("khalid-a-53a190142")
+profile = linkedin.search_people(current_company=[CompanyID.GOOGLE], past_companies=[CompanyID.APPLE], include_private_profiles=True)
+company = linkedin.get_company_updates(public_id="google")
+linkedin.get_organization("google")
+jobs = linkedin.search_jobs(
+    "Software Engineer",
+    sort_by=SortBy.DATE,
+    location=GeoID.USA,
+    remote=[LocationType.ONSITE],
+    limit=10,
+)
+if jobs:
+    for job in jobs.elements:
+        job_complete = linkedin.get_job(job.tracking_urn.split(":")[-1])
+        job_skills = linkedin.get_job_skills(job.tracking_urn.split(":")[-1])
+    print(job_complete)
+linkedin.search({"keywords": "software"})
+res = linkedin.search_people(keywords="software",include_private_profiles=True)
+linkedin._close()
+```
 
 ## Documentation
 
-For comprehensive documentation, including available methods and parameters, visit the [documentation](https://linkedin-api.readthedocs.io/).
 
-[Learn more](#how-it-works) about how it works.
 
 ## Disclaimer
 
@@ -159,27 +134,9 @@ We welcome contributions! [Learn how to find endpoints](#find-new-endpoint).
 
 ## Development
 
-### Dependencies
-
-- Python 3.7
-- A valid Linkedin user account (don't use your personal account, if possible)
-- [`pipenv`](https://pipenv.pypa.io/en/latest/) (optional)
-
 ### Development installation
 
-1. Create a `.env` config file. An example is provided in `.env.example` - you include at least all of the settings set there.
-2. Install dependencies with `pipenv`:
-
-   ```bash
-   pipenv install --dev
-   pipenv shell
-   ```
-
-### Run tests
-
-```bash
-pipenv run test
-```
+TODO
 
 ### Troubleshooting
 
@@ -282,7 +239,3 @@ List(v->PEOPLE)
 It could be possible to document (and implement a nice interface for) this query language - as we add more endpoints to this project, I'm sure it will become more clear if such a thing would be possible (and if it's worth it).
 
 ### Release a new version
-
-1. Bump `__version__` in `__init__.py`
-1. `pipenv run build`
-1. `pipenv run publish`

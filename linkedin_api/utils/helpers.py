@@ -1,3 +1,27 @@
+"""
+MIT License
+
+Copyright (c) 2024 Tom Quirk
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import random
 import base64
 from typing import Dict, List
@@ -154,7 +178,7 @@ def append_update_post_field_to_posts_list(
     if elements_current_index == -1:
         l_posts.append({post_key: post_value})
     else:
-        if not post_key in l_posts[elements_current_index]:
+        if post_key not in l_posts[elements_current_index]:
             l_posts[elements_current_index][post_key] = post_value
         else:
             l_posts.append({post_key: post_value})
@@ -188,7 +212,7 @@ def parse_list_raw_posts(l_raw_posts: List[Dict], linkedin_base_url: str) -> Lis
     :return: List of dicts, each one of them is a post
     :rtype: list
     """
-    l_posts = []
+    l_posts: list[dict] = []
     for i in l_raw_posts:
         author_name = get_update_author_name(i)
         if author_name:

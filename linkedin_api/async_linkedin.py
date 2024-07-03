@@ -1,26 +1,5 @@
 """
-MIT License
-
-Copyright (c) 2024 Tom Quirk
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
+Provides linkedin api-related code
 """
 
 
@@ -30,6 +9,7 @@ from httpx import Cookies
 
 from linkedin_api.utils import query_options
 from linkedin_api.utils._base_linkedin import BaseLinkedIn
+from linkedin_api.client import AsyncLinkedInClient
 from linkedin_api.utils.schemas import (
     LinkedInProfile,
     LinkedInPrivacySettings,
@@ -49,7 +29,7 @@ from linkedin_api.utils.schemas import (
     LinkedInJobSkills,
 )
 
-class LinkedIn(BaseLinkedIn):
+class AsyncLinkedIn(BaseLinkedIn):
     """
     Class for accessing the LinkedIn API.
 
@@ -59,33 +39,41 @@ class LinkedIn(BaseLinkedIn):
     :type password: str
     """
 
-    def _fetch(self, uri: str, base_request=False, **kwargs):
+    def __init__(
+    self,
+    client: AsyncLinkedInClient,
+    ):
+        """Constructor method"""
+        self.client = client
+        self._metadata: dict[str, LinkedInSelfProfile] = {}
+    
+    async def _close(self):
+        await self.client.close()
+
+    async def _fetch(self, uri: str, base_request=False, **kwargs):
         """GET request to Linkedin API"""
 
         url = f"{self.client.API_BASE_URL if not base_request else self.client.LINKEDIN_BASE_URL}{uri}"
-        return self.client.get(url, **kwargs)
+        return await self.client.get(url, **kwargs)
 
-    def _post(self, uri: str, base_request=False, **kwargs):
+    async def _post(self, uri: str, base_request=False, **kwargs):
         """POST request to Linkedin API"""
 
         url = f"{self.client.API_BASE_URL if not base_request else self.client.LINKEDIN_BASE_URL}{uri}"
-        return self.client.post(url, **kwargs)
-    
-    def _close(self):
-        self.client.close()
+        return await self.client.post(url, **kwargs)
 
-    def authenticate(
+    async def authenticate(
         self, username: str, password: str, cookies: Optional[Cookies] = None
     ):
         if not cookies or not self.client._cookie_repository._is_token_still_valid(
             cookies.jar
         ):
-            self.client.authenticate(username, password)
+            await self.client.authenticate(username, password)
         else:
             self.client._set_session_cookies(cookies)
             self.client._cookie_repository.save(cookies, username)
 
-    def get_profile_posts(
+    async def get_profile_posts(
         self,
         urn_id: str,
         post_count=10,
@@ -95,7 +83,7 @@ class LinkedIn(BaseLinkedIn):
         url, url_params = self._api_builder.build_profile_posts_url_params(
             urn_id, count=min(post_count, self._MAX_POST_COUNT), start=start, pagination_token=pagination_token
         )
-        linkedin_response = self._fetch(url, params=url_params)
+        linkedin_response = await self._fetch(url, params=url_params)
         data = linkedin_response.json()
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -104,7 +92,7 @@ class LinkedIn(BaseLinkedIn):
             return None
         return LinkedInProfilePostsResponse(**data)
 
-    def get_post_comments(
+    async def get_post_comments(
         self,
         social_detail_urn: str,
         sort_by: query_options.SortOrder = query_options.SortOrder.RELEVANCE,
@@ -119,7 +107,7 @@ class LinkedIn(BaseLinkedIn):
             sort_order=sort_by.value,
             pagination_token=pagination_token
         )
-        linkedin_response = self._fetch(url, params=url_params)
+        linkedin_response = await self._fetch(url, params=url_params)
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
                 f"failed to get post comments data, response: {linkedin_response.status_code}"
@@ -129,10 +117,10 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInPostCommentResponse(**data)
 
-    def search(self, params: dict, offset=0) -> dict:
+    async def search(self, params: dict, offset=0) -> dict:
         url, _ = self._api_builder.build_search_url_params_query(params, offset)
 
-        linkedin_response = self._fetch(url)
+        linkedin_response = await self._fetch(url)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -148,7 +136,7 @@ class LinkedIn(BaseLinkedIn):
 
         return paging
 
-    def search_people(
+    async def search_people(
         self,
         keywords: str = "",
         connection_of: str = "",
@@ -192,23 +180,23 @@ class LinkedIn(BaseLinkedIn):
         if keywords:
             params["keywords"] = keywords
 
-        data = self.search(params, offset=offset)
+        data = await self.search(params, offset=offset)
 
         results = self._normalize_search_people_data(data, include_private_profiles)
         data["elements"] = results
         return LinkedInSearchPeopleResponse(**data)
 
-    def search_companies(self, keywords: str = "", offset: int = 0) -> LinkedInSearchCompaniesResponse:
+    async def search_companies(self, keywords: str = "", offset: int = 0) -> LinkedInSearchCompaniesResponse:
         params = self._api_builder.build_search_companies_params(keywords)
 
-        data = self.search(params, offset=offset)
+        data = await self.search(params)
 
         results = self._normalize_search_company_data(data)
         data["elements"] = results
 
         return LinkedInSearchCompaniesResponse(**data)
 
-    def search_jobs(
+    async def search_jobs(
         self,
         keywords: str = "",
         companies: list[query_options.CompanyID] = [],
@@ -247,7 +235,7 @@ class LinkedIn(BaseLinkedIn):
         if v2:
             headers = self._api_builder.get_v2_headers()
 
-        linkedin_response = self._fetch(url, headers=headers, timeout=10.0)
+        linkedin_response = await self._fetch(url, headers=headers, timeout=10.0)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -259,11 +247,9 @@ class LinkedIn(BaseLinkedIn):
 
         paging = self._normalize_search_jobs_data(data, v2)
 
-        self.logger.debug(f"Collected {paging["paging"]["count"]} jobs")
-
         return LinkedInJobSearchResponse(**paging)
 
-    def get_profile_contact_info(
+    async def get_profile_contact_info(
        self, public_id: str = "", urn_id: str = ""
     ) -> LinkedInContactInfo | None:
         if not public_id and not urn_id:
@@ -271,14 +257,14 @@ class LinkedIn(BaseLinkedIn):
             return None
 
         url = self._api_builder.build_contact_info_url(public_id, urn_id)
-        res = self._fetch(url)
+        res = await self._fetch(url)
         data = res.json()
 
         contact_info = self._normalize_contact_info(data)
 
         return LinkedInContactInfo(**contact_info)
 
-    def get_profile_skills(
+    async def get_profile_skills(
         self, public_id: str = "", urn_id: str = ""
     ) -> LinkedInProfileSkillsResponse | None:
         if not public_id and not urn_id:
@@ -287,7 +273,7 @@ class LinkedIn(BaseLinkedIn):
 
         params = self._api_builder.get_default_params()
         url = self._api_builder.build_skills_info_url(public_id, urn_id)
-        linkedin_response = self._fetch(url, params=params)
+        linkedin_response = await self._fetch(url, params=params)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -299,7 +285,7 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInProfileSkillsResponse(**data)
 
-    def get_profile(
+    async def get_profile(
         self, public_id: str = "", urn_id: str = ""
     ) -> LinkedInProfile | None:
         if not public_id and not urn_id:
@@ -307,7 +293,7 @@ class LinkedIn(BaseLinkedIn):
             return None
 
         url = self._api_builder.build_get_profile_url(public_id, urn_id)
-        linkedin_response = self._fetch(url)
+        linkedin_response = await self._fetch(url)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -322,12 +308,12 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInProfile(**profile)
 
-    def get_profile_connections(self, urn_id: str, offset: int = 0) -> LinkedInSearchPeopleResponse:
-        return self.search_people(
+    async def get_profile_connections(self, urn_id: str, offset: int = 0) -> LinkedInSearchPeopleResponse:
+        return await self.search_people(
             connection_of=urn_id, network_depths=[query_options.NetworkDepth.FIRST], offset=offset
         )
 
-    def get_company_updates(
+    async def get_company_updates(
         self,
         public_id: str = "",
         urn_id: str = "",
@@ -343,7 +329,7 @@ class LinkedIn(BaseLinkedIn):
             public_id, urn_id, min(count, self._MAX_UPDATE_COUNT), start
         )
 
-        linkedin_response = self._fetch(url, params=params)
+        linkedin_response = await self._fetch(url, params=params)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -355,11 +341,11 @@ class LinkedIn(BaseLinkedIn):
         paging = data["paging"]
         paging["elements"] = data["elements"]
 
-        self.logger.debug(f"results grew: {data["paging"]["count"]}")
+        self.logger.debug(f"results grew: {len(data["elements"])}")
 
         return LinkedInUpdatesResponse(paging=data["paging"], elements=data["elements"])
 
-    def get_profile_updates(
+    async def get_profile_updates(
         self,
         public_id: str = "",
         urn_id: str = "",
@@ -374,7 +360,7 @@ class LinkedIn(BaseLinkedIn):
             public_id, urn_id, min(count, self._MAX_UPDATE_COUNT), start
         )
 
-        linkedin_response = self._fetch(url, params=params)
+        linkedin_response = await self._fetch(url, params=params)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -385,10 +371,10 @@ class LinkedIn(BaseLinkedIn):
         data = linkedin_response.json()
         return LinkedInUpdatesResponse(**data)
 
-    def get_organization(self, public_id: str):
+    async def get_organization(self, public_id: str):
         url, params = self._api_builder.build_get_organization_url_params(public_id)
 
-        linkedin_response = self._fetch(url, params=params)
+        linkedin_response = await self._fetch(url, params=params)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -402,10 +388,10 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInOrganizationResponse(paging=paging, elements=elements)
 
-    def get_user_profile(self, use_cache=True) -> LinkedInSelfProfile | None:
+    async def get_user_profile(self, use_cache=True) -> LinkedInSelfProfile | None:
         me_profile = self._metadata.get("me")
         if not me_profile and (not self.client.metadata.get("me") or not use_cache):
-            linkedin_response = self._fetch("/me")
+            linkedin_response = await self._fetch("/me")
 
             if linkedin_response.status_code != http.HTTPStatus.OK:
                 self.logger.warning(
@@ -419,8 +405,8 @@ class LinkedIn(BaseLinkedIn):
 
         return me_profile
 
-    def get_profile_privacy_settings(self, public_profile_id: str):
-        res = self._fetch(
+    async def get_profile_privacy_settings(self, public_profile_id: str):
+        res = await self._fetch(
             self._api_builder.build_privacy_settings_url(public_profile_id),
             headers=self._api_builder.get_v2_headers(),
         )
@@ -430,8 +416,8 @@ class LinkedIn(BaseLinkedIn):
         data = res.json()
         return LinkedInPrivacySettings(**data.get("data", {}))
 
-    def get_profile_member_badges(self, public_profile_id: str):
-        res = self._fetch(
+    async def get_profile_member_badges(self, public_profile_id: str):
+        res = await self._fetch(
             self._api_builder.build_member_badges_url(public_profile_id),
             headers=self._api_builder.get_v2_headers(),
         )
@@ -441,8 +427,8 @@ class LinkedIn(BaseLinkedIn):
         data = res.json()
         return LinkedInMemberBadges(**data.get("data", {}))
 
-    def get_profile_network_info(self, public_profile_id: str):
-        res = self._fetch(
+    async def get_profile_network_info(self, public_profile_id: str):
+        res = await self._fetch(
             self._api_builder.build_profile_network_url(public_profile_id),
             headers=self._api_builder.get_v2_headers(),
         )
@@ -452,10 +438,10 @@ class LinkedIn(BaseLinkedIn):
         data = res.json()
         return LinkedInNetwork(**data.get("data", {}))
 
-    def get_job(self, job_id: str) -> LinkedInJob | None:
+    async def get_job(self, job_id: str) -> LinkedInJob | None:
         url, params = self._api_builder.build_get_job_url_params(job_id)
 
-        linkedin_response = self._fetch(url, params=params)
+        linkedin_response = await self._fetch(url, params=params)
 
         if linkedin_response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -471,9 +457,9 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInJob(**data)
 
-    def get_job_skills(self, job_id: str) -> LinkedInJobSkills | None:
+    async def get_job_skills(self, job_id: str) -> LinkedInJobSkills | None:
         url, params = self._api_builder.build_get_job_skill_url_params(job_id)
-        linkedin_response = self._fetch(
+        linkedin_response = await self._fetch(
             url,
             params=params,
         )
