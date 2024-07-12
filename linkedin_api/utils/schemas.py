@@ -385,14 +385,14 @@ class LinkedInJobSearchResponse(Response):
 
 class OffsiteApply(Base):
     applyStartersPreferenceVoid: bool | None = None
-    companyApplyUrl: HttpUrl
-    inPageOffsiteApply: bool | None = None
+    company_apply_url: HttpUrl = Field(alias="companyApplyUrl")
+    in_page_offsite_apply: bool | None = Field(alias="inPageOffsiteApply", default=None)
 
 
 class ComplexApply(Base):
-    unifyApplyEnabled: bool | None = None
-    companyApplyUrl: HttpUrl | None = None
-    easyApplyUrl: HttpUrl
+    unify_apply_enabled: bool | None = Field(alias="unifyApplyEnabled", default=None)
+    company_apply_url: HttpUrl | None = Field(alias="companyApplyUrl", default=None)
+    easy_apply_url: HttpUrl = Field(alias="easyApplyUrl")
 
 
 class LinkedInApplyMethod(Base):
