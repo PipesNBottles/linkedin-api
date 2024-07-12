@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
 from urllib.parse import urlencode, quote_plus
 
 
@@ -77,7 +76,9 @@ class ApiBuilder:
         }
 
     @staticmethod
-    def build_profile_posts_url_params(urn_id: str, count: int, start: int, pagination_token: str):
+    def build_profile_posts_url_params(
+        urn_id: str, count: int, start: int, pagination_token: str
+    ):
         params = {
             "count": count,
             "start": start,

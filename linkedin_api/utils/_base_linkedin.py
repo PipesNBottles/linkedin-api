@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
 import loguru
 from abc import ABC, abstractmethod
 from httpx import Cookies
@@ -53,6 +52,7 @@ from linkedin_api.utils.schemas import (
     LinkedInJobSkills,
 )
 
+
 class BaseLinkedIn(ABC):
     _MAX_POST_COUNT = 100  # max seems to be 100 posts per page
     _MAX_UPDATE_COUNT = 100  # max seems to be 100
@@ -65,8 +65,8 @@ class BaseLinkedIn(ABC):
     _api_builder = ApiBuilder()
 
     def __init__(
-    self,
-    client: Client,
+        self,
+        client: Client,
     ):
         """Constructor method"""
         self.client = client
@@ -187,7 +187,9 @@ class BaseLinkedIn(ABC):
         result = {"paging": data_clusters["paging"], "elements": new_elements}
         return result
 
-    def _normalize_search_people_data(self, data: dict, include_private_profiles: bool) -> list[dict]:
+    def _normalize_search_people_data(
+        self, data: dict, include_private_profiles: bool
+    ) -> list[dict]:
         results = []
         for item in data.get("elements", []):
             if (
@@ -292,11 +294,7 @@ class BaseLinkedIn(ABC):
 
     @abstractmethod
     def get_profile_posts(
-        self,
-        urn_id: str,
-        post_count=10,
-        start=0,
-        pagination_token = ""
+        self, urn_id: str, post_count=10, start=0, pagination_token=""
     ) -> LinkedInProfilePostsResponse | None:
         """
         :param urn_id: LinkedIn URN ID for a profile
@@ -314,7 +312,7 @@ class BaseLinkedIn(ABC):
         sort_by: query_options.SortOrder = query_options.SortOrder.RELEVANCE,
         comment_count=100,
         start=0,
-        pagination_token = ""
+        pagination_token="",
     ) -> LinkedInPostCommentResponse | None:
         """
         get_post_comments: Get post comments
@@ -387,7 +385,9 @@ class BaseLinkedIn(ABC):
         """
 
     @abstractmethod
-    def search_companies(self, keywords: str = "", offset: int = 0) -> LinkedInSearchCompaniesResponse:
+    def search_companies(
+        self, keywords: str = "", offset: int = 0
+    ) -> LinkedInSearchCompaniesResponse:
         """
         Perform a LinkedIn search for companies.
 
@@ -474,9 +474,10 @@ class BaseLinkedIn(ABC):
         :return:LinkedInProfile | None
         """
 
-
     @abstractmethod
-    def get_profile_connections(self, urn_id: str, offset: int = 0) -> LinkedInSearchPeopleResponse:
+    def get_profile_connections(
+        self, urn_id: str, offset: int = 0
+    ) -> LinkedInSearchPeopleResponse:
         """
         Fetch first-degree connections for a given LinkedIn profile.
 
@@ -492,7 +493,7 @@ class BaseLinkedIn(ABC):
         public_id: str = "",
         urn_id: str = "",
         start: int = 0,
-        count: int = _MAX_UPDATE_COUNT
+        count: int = _MAX_UPDATE_COUNT,
     ) -> LinkedInUpdatesResponse | None:
         """
         Fetch company updates (news activity) for a given LinkedIn company.
@@ -511,7 +512,7 @@ class BaseLinkedIn(ABC):
         public_id: str = "",
         urn_id: str = "",
         start: int = 0,
-        count: int = _MAX_UPDATE_COUNT
+        count: int = _MAX_UPDATE_COUNT,
     ) -> LinkedInUpdatesResponse | None:
         """
         Fetch profile updates (newsfeed activity) for a given LinkedIn profile.
@@ -542,7 +543,9 @@ class BaseLinkedIn(ABC):
         """
 
     @abstractmethod
-    def get_profile_privacy_settings(self, public_profile_id: str) -> LinkedInPrivacySettings | None:
+    def get_profile_privacy_settings(
+        self, public_profile_id: str
+    ) -> LinkedInPrivacySettings | None:
         """
         Fetch privacy settings for a given LinkedIn profile.
 
@@ -552,7 +555,9 @@ class BaseLinkedIn(ABC):
         """
 
     @abstractmethod
-    def get_profile_member_badges(self, public_profile_id: str) -> LinkedInMemberBadges | None:
+    def get_profile_member_badges(
+        self, public_profile_id: str
+    ) -> LinkedInMemberBadges | None:
         """
         Fetch badges for a given LinkedIn profile.
 
@@ -562,7 +567,9 @@ class BaseLinkedIn(ABC):
         """
 
     @abstractmethod
-    def get_profile_network_info(self, public_profile_id: str) -> LinkedInNetwork | None:
+    def get_profile_network_info(
+        self, public_profile_id: str
+    ) -> LinkedInNetwork | None:
         """
         Fetch network information for a given LinkedIn profile.
 

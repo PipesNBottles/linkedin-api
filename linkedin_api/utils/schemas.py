@@ -41,8 +41,10 @@ class VisibilitySettings(Enum):
 class Base(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+
 class Metadata(Base):
     pagination_token: str | None = Field(alias="paginationToken", default=None)
+
 
 class MiniProfile(Base):
     # TODO see if we can add this to all the other requests that send back a mini profile

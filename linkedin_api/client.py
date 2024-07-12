@@ -33,6 +33,7 @@ from tenacity import (
     retry_if_not_result,
 )
 from abc import ABC, abstractmethod
+from aiolimiter import AsyncLimiter
 
 import loguru
 import json
@@ -144,7 +145,7 @@ class LinkedInClient(Client):
         self.metadata = {}
         self._use_cookie_cache = not refresh_cookies
         self._cookie_repository.set_cookies_dir(cookies_dir)
-    
+
     def close(self):
         self._session.close()
 
@@ -248,7 +249,8 @@ class AsyncLinkedInClient(Client):
         self.metadata = {}
         self._use_cookie_cache = not refresh_cookies
         self._cookie_repository.set_cookies_dir(cookies_dir)
-    
+        self._limiter = AsyncLimiter(200, 60)
+
     async def close(self):
         await self._session.aclose()
 
@@ -331,7 +333,8 @@ class AsyncLinkedInClient(Client):
         retry_error_callback=lambda x: x.outcome.result(),  # type: ignore
     )  # type: ignore
     async def post(self, url: str, **kwargs):
-        return await self._session.post(url, **kwargs)
+        async with self._limiter:
+            return await self._session.post(url, **kwargs)
 
     @retry(
         wait=wait_exponential_jitter(2, 15),
@@ -340,4 +343,5 @@ class AsyncLinkedInClient(Client):
         retry_error_callback=lambda x: x.outcome.result(),  # type: ignore
     )  # type: ignore
     async def get(self, url: str, **kwargs):
-        return await self._session.get(url, **kwargs)
+        async with self._limiter:
+            return await self._session.get(url, **kwargs)

@@ -6,8 +6,70 @@ from .linkedin import LinkedIn
 from .async_linkedin import AsyncLinkedIn
 from .linkedin_api import LinkedInScriptApi
 from .client import AsyncLinkedInClient, LinkedInClient
-from .utils.schemas import *
-from .utils.query_options import *
+from .utils.schemas import (
+    ContentSource,
+    JobState,
+    ContentType,
+    DistanceValue,
+    EnabledIndicators,
+    VisibilitySettings,
+    MiniProfile,
+    LinkedInEducation,
+    LinkedInExperience,
+    LinkedInPublication,
+    LinkedInCertification,
+    LinkedInVolunteer,
+    LinkedInProject,
+    LinkedInProfile,
+    LinkedInPrivacySettings,
+    LinkedInMemberBadges,
+    LinkedInNetwork,
+    CompanyIndustry,
+    OfficeLocation,
+    LinkedInOrganization,
+    LinkedInOrganizationResponse,
+    TwitterContactInfo,
+    WebsiteContactInfo,
+    LinkedInContactInfo,
+    LinkedInSearchElement,
+    LinkedInSearchPeopleElement,
+    LinkedInSearchCompaniesElement,
+    LinkedInSearchPeopleResponse,
+    LinkedInSearchCompaniesResponse,
+    LinkedInLikes,
+    LinkedInSocialDetail,
+    LinkedInText,
+    LinkedInCommentary,
+    LinkedInProfilePostElement,
+    LinkedInProfilePostsResponse,
+    LinkedInProfileSkillsResponse,
+    LinkedInCommentElement,
+    LinkedInPostCommentResponse,
+    LinkedInVoyagerValueV2,
+    LinkedInUpdateValue,
+    LinkedInUpdateElement,
+    LinkedInUpdatesResponse,
+    LinkedInSelfProfile,
+    LinkedInJobSearchElement,
+    LinkedInJobSearchResponse,
+    OffsiteApply,
+    ComplexApply,
+    LinkedInApplyMethod,
+    LinkedInJob,
+    SkillMatchStatus,
+    LinkedInJobSkills,
+)
+from .utils.query_options import (
+    CompanyID,
+    Experience,
+    NetworkDepth,
+    JobType,
+    SortOrder,
+    SortBy,
+    JobTitle,
+    GeoID,
+    LocationType,
+)
 
 __title__ = "linkedin_api"
 __version__ = "2.1.1"
@@ -83,5 +145,5 @@ __all__ = [
     "SortBy",
     "CompanyID",
     "JobTitle",
-    "GeoID"
-    ]
+    "GeoID",
+]

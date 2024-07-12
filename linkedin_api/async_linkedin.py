@@ -2,7 +2,6 @@
 Provides linkedin api-related code
 """
 
-
 import http
 from typing import Optional
 from httpx import Cookies
@@ -29,6 +28,7 @@ from linkedin_api.utils.schemas import (
     LinkedInJobSkills,
 )
 
+
 class AsyncLinkedIn(BaseLinkedIn):
     """
     Class for accessing the LinkedIn API.
@@ -40,13 +40,13 @@ class AsyncLinkedIn(BaseLinkedIn):
     """
 
     def __init__(
-    self,
-    client: AsyncLinkedInClient,
+        self,
+        client: AsyncLinkedInClient,
     ):
         """Constructor method"""
         self.client = client
         self._metadata: dict[str, LinkedInSelfProfile] = {}
-    
+
     async def _close(self):
         await self.client.close()
 
@@ -74,14 +74,13 @@ class AsyncLinkedIn(BaseLinkedIn):
             self.client._cookie_repository.save(cookies, username)
 
     async def get_profile_posts(
-        self,
-        urn_id: str,
-        post_count=10,
-        start=0,
-        pagination_token = ""
+        self, urn_id: str, post_count=10, start=0, pagination_token=""
     ) -> LinkedInProfilePostsResponse | None:
         url, url_params = self._api_builder.build_profile_posts_url_params(
-            urn_id, count=min(post_count, self._MAX_POST_COUNT), start=start, pagination_token=pagination_token
+            urn_id,
+            count=min(post_count, self._MAX_POST_COUNT),
+            start=start,
+            pagination_token=pagination_token,
         )
         linkedin_response = await self._fetch(url, params=url_params)
         data = linkedin_response.json()
@@ -98,14 +97,14 @@ class AsyncLinkedIn(BaseLinkedIn):
         sort_by: query_options.SortOrder = query_options.SortOrder.RELEVANCE,
         comment_count=100,
         start=0,
-        pagination_token = ""
+        pagination_token="",
     ) -> LinkedInPostCommentResponse | None:
         url, url_params = self._api_builder.build_post_comments_url_query(
             post_urn=social_detail_urn,
             count=min(comment_count, self._MAX_POST_COUNT),
             start=start,
             sort_order=sort_by.value,
-            pagination_token=pagination_token
+            pagination_token=pagination_token,
         )
         linkedin_response = await self._fetch(url, params=url_params)
         if linkedin_response.status_code != http.HTTPStatus.OK:
@@ -186,7 +185,9 @@ class AsyncLinkedIn(BaseLinkedIn):
         data["elements"] = results
         return LinkedInSearchPeopleResponse(**data)
 
-    async def search_companies(self, keywords: str = "", offset: int = 0) -> LinkedInSearchCompaniesResponse:
+    async def search_companies(
+        self, keywords: str = "", offset: int = 0
+    ) -> LinkedInSearchCompaniesResponse:
         params = self._api_builder.build_search_companies_params(keywords)
 
         data = await self.search(params)
@@ -250,7 +251,7 @@ class AsyncLinkedIn(BaseLinkedIn):
         return LinkedInJobSearchResponse(**paging)
 
     async def get_profile_contact_info(
-       self, public_id: str = "", urn_id: str = ""
+        self, public_id: str = "", urn_id: str = ""
     ) -> LinkedInContactInfo | None:
         if not public_id and not urn_id:
             self.logger.info("Need to specifiy either a public id or a urn id")
@@ -308,9 +309,13 @@ class AsyncLinkedIn(BaseLinkedIn):
 
         return LinkedInProfile(**profile)
 
-    async def get_profile_connections(self, urn_id: str, offset: int = 0) -> LinkedInSearchPeopleResponse:
+    async def get_profile_connections(
+        self, urn_id: str, offset: int = 0
+    ) -> LinkedInSearchPeopleResponse:
         return await self.search_people(
-            connection_of=urn_id, network_depths=[query_options.NetworkDepth.FIRST], offset=offset
+            connection_of=urn_id,
+            network_depths=[query_options.NetworkDepth.FIRST],
+            offset=offset,
         )
 
     async def get_company_updates(
@@ -318,9 +323,8 @@ class AsyncLinkedIn(BaseLinkedIn):
         public_id: str = "",
         urn_id: str = "",
         start: int = 0,
-        count: int = BaseLinkedIn._MAX_UPDATE_COUNT
+        count: int = BaseLinkedIn._MAX_UPDATE_COUNT,
     ) -> LinkedInUpdatesResponse | None:
-
         if not public_id and not urn_id:
             self.logger.info("Need either public id or urn id to continue")
             return None

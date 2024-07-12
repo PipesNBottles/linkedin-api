@@ -23,7 +23,6 @@ SOFTWARE.
 
 """
 
-
 import http
 from typing import Optional
 from httpx import Cookies
@@ -49,6 +48,7 @@ from linkedin_api.utils.schemas import (
     LinkedInJobSkills,
 )
 
+
 class LinkedIn(BaseLinkedIn):
     """
     Class for accessing the LinkedIn API.
@@ -70,7 +70,7 @@ class LinkedIn(BaseLinkedIn):
 
         url = f"{self.client.API_BASE_URL if not base_request else self.client.LINKEDIN_BASE_URL}{uri}"
         return self.client.post(url, **kwargs)
-    
+
     def _close(self):
         self.client.close()
 
@@ -86,14 +86,13 @@ class LinkedIn(BaseLinkedIn):
             self.client._cookie_repository.save(cookies, username)
 
     def get_profile_posts(
-        self,
-        urn_id: str,
-        post_count=10,
-        start=0,
-        pagination_token = ""
+        self, urn_id: str, post_count=10, start=0, pagination_token=""
     ) -> LinkedInProfilePostsResponse | None:
         url, url_params = self._api_builder.build_profile_posts_url_params(
-            urn_id, count=min(post_count, self._MAX_POST_COUNT), start=start, pagination_token=pagination_token
+            urn_id,
+            count=min(post_count, self._MAX_POST_COUNT),
+            start=start,
+            pagination_token=pagination_token,
         )
         linkedin_response = self._fetch(url, params=url_params)
         data = linkedin_response.json()
@@ -110,14 +109,14 @@ class LinkedIn(BaseLinkedIn):
         sort_by: query_options.SortOrder = query_options.SortOrder.RELEVANCE,
         comment_count=100,
         start=0,
-        pagination_token = ""
+        pagination_token="",
     ) -> LinkedInPostCommentResponse | None:
         url, url_params = self._api_builder.build_post_comments_url_query(
             post_urn=social_detail_urn,
             count=min(comment_count, self._MAX_POST_COUNT),
             start=start,
             sort_order=sort_by.value,
-            pagination_token=pagination_token
+            pagination_token=pagination_token,
         )
         linkedin_response = self._fetch(url, params=url_params)
         if linkedin_response.status_code != http.HTTPStatus.OK:
@@ -198,7 +197,9 @@ class LinkedIn(BaseLinkedIn):
         data["elements"] = results
         return LinkedInSearchPeopleResponse(**data)
 
-    def search_companies(self, keywords: str = "", offset: int = 0) -> LinkedInSearchCompaniesResponse:
+    def search_companies(
+        self, keywords: str = "", offset: int = 0
+    ) -> LinkedInSearchCompaniesResponse:
         params = self._api_builder.build_search_companies_params(keywords)
 
         data = self.search(params, offset=offset)
@@ -264,7 +265,7 @@ class LinkedIn(BaseLinkedIn):
         return LinkedInJobSearchResponse(**paging)
 
     def get_profile_contact_info(
-       self, public_id: str = "", urn_id: str = ""
+        self, public_id: str = "", urn_id: str = ""
     ) -> LinkedInContactInfo | None:
         if not public_id and not urn_id:
             self.logger.info("Need to specifiy either a public id or a urn id")
@@ -322,9 +323,13 @@ class LinkedIn(BaseLinkedIn):
 
         return LinkedInProfile(**profile)
 
-    def get_profile_connections(self, urn_id: str, offset: int = 0) -> LinkedInSearchPeopleResponse:
+    def get_profile_connections(
+        self, urn_id: str, offset: int = 0
+    ) -> LinkedInSearchPeopleResponse:
         return self.search_people(
-            connection_of=urn_id, network_depths=[query_options.NetworkDepth.FIRST], offset=offset
+            connection_of=urn_id,
+            network_depths=[query_options.NetworkDepth.FIRST],
+            offset=offset,
         )
 
     def get_company_updates(
@@ -332,9 +337,8 @@ class LinkedIn(BaseLinkedIn):
         public_id: str = "",
         urn_id: str = "",
         start: int = 0,
-        count: int = BaseLinkedIn._MAX_UPDATE_COUNT
+        count: int = BaseLinkedIn._MAX_UPDATE_COUNT,
     ) -> LinkedInUpdatesResponse | None:
-
         if not public_id and not urn_id:
             self.logger.info("Need either public id or urn id to continue")
             return None

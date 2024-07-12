@@ -1,18 +1,46 @@
 from linkedin_api import LinkedIn
 from httpx import Client, Cookies, Proxy
 from linkedin_api.client import LinkedInClient
-from linkedin_api.utils.schemas import LinkedInProfilePostsResponse, LinkedInPostCommentResponse, LinkedInUpdatesResponse, LinkedInJobSearchResponse, LinkedInSearchCompaniesResponse, LinkedInSearchPeopleResponse
-from linkedin_api.utils.query_options import SortOrder, SortBy, GeoID, LocationType, JobTitle, JobType, Experience, CompanyID, NetworkDepth
+from linkedin_api.utils.schemas import (
+    LinkedInProfilePostsResponse,
+    LinkedInPostCommentResponse,
+    LinkedInUpdatesResponse,
+    LinkedInJobSearchResponse,
+    LinkedInSearchCompaniesResponse,
+    LinkedInSearchPeopleResponse,
+)
+from linkedin_api.utils.query_options import (
+    SortOrder,
+    SortBy,
+    GeoID,
+    LocationType,
+    JobTitle,
+    JobType,
+    Experience,
+    CompanyID,
+    NetworkDepth,
+)
+
 
 class LinkedInScriptApi:
-    def __init__(self, username: str, password: str, cookies: Cookies | None = None, proxy: Proxy | None = None) -> None:
-        self._linkedin = LinkedIn(client=LinkedInClient(session=Client(cookies=cookies, proxy=proxy)))
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        cookies: Cookies | None = None,
+        proxy: Proxy | None = None,
+    ) -> None:
+        self._linkedin = LinkedIn(
+            client=LinkedInClient(session=Client(cookies=cookies, proxy=proxy))
+        )
         self._linkedin.authenticate(username, password)
 
-    def get_profile(self, public_id = "", urn_id = ""):
+    def get_profile(self, public_id="", urn_id=""):
         return self._linkedin.get_profile(public_id=public_id, urn_id=urn_id)
 
-    def get_posts_from_profile(self, urn_id: str, total_posts: int = 10) -> list[LinkedInProfilePostsResponse]:
+    def get_posts_from_profile(
+        self, urn_id: str, total_posts: int = 10
+    ) -> list[LinkedInProfilePostsResponse]:
         res: list[LinkedInProfilePostsResponse] = []
         start = 0
         num_posts = total_posts
@@ -26,17 +54,28 @@ class LinkedInScriptApi:
                 if total_posts <= start:
                     break
 
-                current_posts = self._linkedin.get_profile_posts(urn_id, start=start, post_count=num_posts, pagination_token=current_posts.metadata.pagination_token)
+                current_posts = self._linkedin.get_profile_posts(
+                    urn_id,
+                    start=start,
+                    post_count=num_posts,
+                    pagination_token=current_posts.metadata.pagination_token,
+                )
                 if current_posts and current_posts.elements:
                     res.append(current_posts)
 
         return res
-    
-    def get_post_comments_from_post(self, social_detail_urn: str, sort_order = SortOrder.RELEVANCE, total_comments = 100) -> list[LinkedInPostCommentResponse]:
+
+    def get_post_comments_from_post(
+        self, social_detail_urn: str, sort_order=SortOrder.RELEVANCE, total_comments=100
+    ) -> list[LinkedInPostCommentResponse]:
         res: list[LinkedInPostCommentResponse] = []
         start = 0
         num_comments = total_comments
-        current_comments = self._linkedin.get_post_comments(social_detail_urn=social_detail_urn, sort_by=sort_order, comment_count=total_comments)
+        current_comments = self._linkedin.get_post_comments(
+            social_detail_urn=social_detail_urn,
+            sort_by=sort_order,
+            comment_count=total_comments,
+        )
         if current_comments and current_comments.elements:
             res.append(current_comments)
         if total_comments > self._linkedin._MAX_POST_COUNT:
@@ -46,7 +85,13 @@ class LinkedInScriptApi:
                 if total_comments <= start:
                     break
 
-                current_comments = self._linkedin.get_post_comments(social_detail_urn=social_detail_urn, sort_by=sort_order, comment_count=num_comments, start=start, pagination_token=current_comments.metadata.pagination_token)
+                current_comments = self._linkedin.get_post_comments(
+                    social_detail_urn=social_detail_urn,
+                    sort_by=sort_order,
+                    comment_count=num_comments,
+                    start=start,
+                    pagination_token=current_comments.metadata.pagination_token,
+                )
                 if current_comments and current_comments.elements:
                     res.append(current_comments)
 
@@ -62,11 +107,11 @@ class LinkedInScriptApi:
         industries: list[str] = [],
         location: GeoID | None = GeoID.USA,
         remote: list[LocationType] = [],
-        listed_at = 24 * 60 * 60,
+        listed_at=24 * 60 * 60,
         distance: int | None = None,
         sort_by: SortBy = SortBy.RELEVANCE,
         v2: bool = False,
-        total_jobs = 10,
+        total_jobs=10,
     ) -> list[LinkedInJobSearchResponse]:
         res: list[LinkedInJobSearchResponse] = []
         kwargs = {
@@ -81,7 +126,7 @@ class LinkedInScriptApi:
             "listed_at": listed_at,
             "distance": distance,
             "sort_by": sort_by,
-            "v2": v2
+            "v2": v2,
         }
         start = 0
         num_jobs = total_jobs
@@ -95,7 +140,9 @@ class LinkedInScriptApi:
                 if total_jobs <= start:
                     break
 
-                all_jobs = self._linkedin.search_jobs(**kwargs, limit=num_jobs, offset=start)
+                all_jobs = self._linkedin.search_jobs(
+                    **kwargs, limit=num_jobs, offset=start
+                )
                 if all_jobs and all_jobs.elements:
                     res.append(all_jobs)
         return res
@@ -113,7 +160,7 @@ class LinkedInScriptApi:
         industries: list[str] = [],
         schools: list[str] = [],
         service_categories: list[str] = [],
-        include_private_profiles: bool =False,
+        include_private_profiles: bool = False,
         keyword_first_name: str = "",
         keyword_last_name: str = "",
         keyword_title: str = "",
@@ -140,7 +187,7 @@ class LinkedInScriptApi:
             "keyword_title": keyword_title,
             "keyword_company": keyword_company,
             "keyword_school": keyword_school,
-            "offset": 0
+            "offset": 0,
         }
         start = 0
         num_people = total_people
@@ -149,18 +196,20 @@ class LinkedInScriptApi:
             res.append(all_people)
         if total_people > all_people.paging.count:
             while all_people and all_people.elements:
-                start +=  all_people.paging.count
-                num_people -=  all_people.paging.count
+                start += all_people.paging.count
+                num_people -= all_people.paging.count
                 if total_people <= start:
                     break
                 kwargs["offset"] = start
                 all_people = self._linkedin.search_people(**kwargs)
                 if all_people.elements:
                     res.append(all_people)
-        
+
         return res
-    
-    def search_companies(self, keywords: str = "", total_companies = 10) -> list[LinkedInSearchCompaniesResponse]:
+
+    def search_companies(
+        self, keywords: str = "", total_companies=10
+    ) -> list[LinkedInSearchCompaniesResponse]:
         res: list[LinkedInSearchCompaniesResponse] = []
         all_companies = self._linkedin.search_companies(keywords)
         start = 0
@@ -174,18 +223,24 @@ class LinkedInScriptApi:
                 if total_companies <= start:
                     break
 
-                all_companies = self._linkedin.search_companies(keywords=keywords, offset=start)
+                all_companies = self._linkedin.search_companies(
+                    keywords=keywords, offset=start
+                )
                 if all_companies.elements:
                     res.append(all_companies)
         return res
 
-    def get_contact_info_from_profile(self, public_id = "", urn_id = ""):
-        return self._linkedin.get_profile_contact_info(public_id=public_id, urn_id=urn_id)
+    def get_contact_info_from_profile(self, public_id="", urn_id=""):
+        return self._linkedin.get_profile_contact_info(
+            public_id=public_id, urn_id=urn_id
+        )
 
-    def get_skills_from_profile(self, public_id = "", urn_id = ""):
+    def get_skills_from_profile(self, public_id="", urn_id=""):
         return self._linkedin.get_profile_skills(public_id=public_id, urn_id=urn_id)
-    
-    def get_connections_from_profile(self, urn_id: str = "", total_connections: int = 10) -> list[LinkedInSearchPeopleResponse]:
+
+    def get_connections_from_profile(
+        self, urn_id: str = "", total_connections: int = 10
+    ) -> list[LinkedInSearchPeopleResponse]:
         res: list[LinkedInSearchPeopleResponse] = []
         start = 0
         num_people = total_connections
@@ -194,21 +249,25 @@ class LinkedInScriptApi:
             res.append(all_connections)
         if total_connections > all_connections.paging.count:
             while all_connections and all_connections.elements:
-                start +=  all_connections.paging.count
-                num_people -=  all_connections.paging.count
+                start += all_connections.paging.count
+                num_people -= all_connections.paging.count
                 if total_connections <= start:
                     break
-                all_connections = self._linkedin.get_profile_connections(urn_id=urn_id, offset=start)
+                all_connections = self._linkedin.get_profile_connections(
+                    urn_id=urn_id, offset=start
+                )
                 if all_connections.elements:
                     res.append(all_connections)
-        
+
         return res
-        
-    def get_updates_from_company(self, public_id = "", urn_id = "", total_posts = 10):
+
+    def get_updates_from_company(self, public_id="", urn_id="", total_posts=10):
         res: list[LinkedInUpdatesResponse] = []
         start = 0
         num_posts = total_posts
-        all_updates = self._linkedin.get_company_updates(public_id=public_id, urn_id=urn_id, count=total_posts)
+        all_updates = self._linkedin.get_company_updates(
+            public_id=public_id, urn_id=urn_id, count=total_posts
+        )
         if all_updates and all_updates.elements:
             res.append(all_updates)
         if total_posts > self._linkedin._MAX_UPDATE_COUNT:
@@ -217,18 +276,22 @@ class LinkedInScriptApi:
                 num_posts -= all_updates.paging.count
                 if total_posts <= start:
                     break
-                
-                all_updates = self._linkedin.get_company_updates(public_id=public_id, urn_id=urn_id, start=start, count=num_posts)
+
+                all_updates = self._linkedin.get_company_updates(
+                    public_id=public_id, urn_id=urn_id, start=start, count=num_posts
+                )
                 if all_updates and all_updates.elements:
                     res.append(all_updates)
 
         return res
 
-    def get_updates_from_profile(self, public_id = "", urn_id = "", total_posts = 10):
+    def get_updates_from_profile(self, public_id="", urn_id="", total_posts=10):
         res: list[LinkedInUpdatesResponse] = []
         start = 0
         num_posts = total_posts
-        all_updates = self._linkedin.get_profile_updates(public_id=public_id, urn_id=urn_id, count=total_posts)
+        all_updates = self._linkedin.get_profile_updates(
+            public_id=public_id, urn_id=urn_id, count=total_posts
+        )
         if all_updates and all_updates.elements:
             res.append(all_updates)
         if total_posts > self._linkedin._MAX_UPDATE_COUNT:
@@ -237,8 +300,10 @@ class LinkedInScriptApi:
                 num_posts -= all_updates.paging.count
                 if total_posts <= start:
                     break
-                
-                all_updates = self._linkedin.get_profile_updates(public_id=public_id, urn_id=urn_id, start=start, count=num_posts)
+
+                all_updates = self._linkedin.get_profile_updates(
+                    public_id=public_id, urn_id=urn_id, start=start, count=num_posts
+                )
                 if all_updates and all_updates.elements:
                     res.append(all_updates)
 
@@ -258,6 +323,6 @@ class LinkedInScriptApi:
 
     def get_job(self, job_id: str):
         return self._linkedin.get_job(job_id)
-    
+
     def get_job_skills(self, job_id: str):
         return self._linkedin.get_job_skills(job_id)

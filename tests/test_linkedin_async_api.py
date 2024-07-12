@@ -38,6 +38,7 @@ async def init_linkedin(respx_mock):
     await linkedin.authenticate("foo", "bar")
     return linkedin
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_get_profile(init_linkedin):
@@ -185,6 +186,9 @@ async def test_get_profile_contact_info(init_linkedin):
 @respx.mock
 async def test_get_profile_posts(init_linkedin):
     mock_json_response = {
+        "metadata": {
+            "paginationToken": "asadsfsfw",
+        },
         "elements": [
             {
                 "actor": {
@@ -258,6 +262,9 @@ async def test_get_profile_posts(init_linkedin):
 @respx.mock
 async def test_get_post_comments(init_linkedin):
     mock_json_response = {
+        "metadata": {
+            "paginationToken": "assdfsdfqw"
+        },
         "paging": {"count": 100, "start": 0, "total": 3, "links": []},
         "elements": [
             {

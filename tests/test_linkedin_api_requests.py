@@ -179,6 +179,9 @@ def test_get_profile_contact_info(init_linkedin):
 @respx.mock
 def test_get_profile_posts(init_linkedin):
     mock_json_response = {
+        "metadata": {
+            "paginationToken": "asaqwqw",
+        },
         "elements": [
             {
                 "actor": {
@@ -251,6 +254,9 @@ def test_get_profile_posts(init_linkedin):
 @respx.mock
 def test_get_post_comments(init_linkedin):
     mock_json_response = {
+        "metadata": {
+            "paginationToken": "aswefdfdfwsefd",
+        },
         "paging": {"count": 100, "start": 0, "total": 3, "links": []},
         "elements": [
             {
